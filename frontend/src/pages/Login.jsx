@@ -41,7 +41,7 @@ function Login() {
     }
 
     return (
-        <div className="min-h-[calc(100vh-58px)] flex items-center justify-center p-6 relative overflow-hidden">
+        <div className="min-h-[calc(100vh-58px)] flex items-center justify-center p-6 relative overflow-x-hidden">
             {/* Background glowing orbs */}
             <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-acc/20 rounded-full blur-[100px] pointer-events-none"></div>
             <div className="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-purple-500/20 rounded-full blur-[100px] pointer-events-none"></div>

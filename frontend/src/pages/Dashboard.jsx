@@ -102,7 +102,7 @@ function Dashboard() {
     };
 
     return (
-        <div className="min-h-[calc(100vh-58px)] p-6 md:p-12 relative overflow-hidden bg-dark-bg text-gray-100 font-sans">
+        <div className="min-h-[calc(100vh-58px)] p-6 md:p-12 relative overflow-x-hidden bg-dark-bg text-gray-100 font-sans">
             
             {/* Animated Background Orbs */}
             <div className="absolute top-1/4 right-1/4 w-[500px] h-[500px] bg-neon-primary/10 rounded-full blur-[120px] animate-blob pointer-events-none"></div>
