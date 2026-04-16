@@ -1,14 +1,25 @@
 const { GoogleGenerativeAI } = require("@google/generative-ai");
+const Debate = require("../models/debateSchema");
 
 const askAi = async (req, res) => {
     try {
 
-        const { prompt } = req.body;
+        const { prompt, personality } = req.body;
+
+        let personalityInstruction = "";
+        if (personality === "Aggressive") {
+            personalityInstruction = "- Be brutally honest, unapologetic, and highly aggressive in dismantling their argument. Pull no punches.";
+        } else if (personality === "Philosophical") {
+            personalityInstruction = "- Be extremely deep, reflective, and philosophical. Use metaphors and question the very nature of their premise.";
+        } else if (personality === "Sarcastic") {
+            personalityInstruction = "- Be highly witty and sarcastic. Use dry humor to point out the flaws in their argument.";
+        }
 
         const final_prompt = `You are an AI debate opponent in a live interactive debate platform for students.
 
 Your role:
 - Act as an intelligent opponent in a structured debate.
+${personalityInstruction}
 - The student gives a topic and their opinion/argument.
 - Your job is to:
   1. Identify the student's stance clearly.
@@ -129,6 +140,16 @@ now, the user input is: ${prompt}
         const response = await result.response;
         const text = response.text();
 
+        // Save DB interaction
+        if (req.user && req.user.id) {
+            await Debate.create({
+                userId: req.user.id,
+                prompt,
+                personality: personality || "Standard",
+                response: text
+            });
+        }
+
         res.json({ response: text });
     } catch (error) {
         console.error("Error in AI Controller:", error);
@@ -136,4 +157,18 @@ now, the user input is: ${prompt}
     }
 };
 
-module.exports = askAi;
+const getHistory = async (req, res) => {
+    try {
+        if (!req.user || !req.user.id) {
+            return res.status(401).json({ error: "Unauthorized" });
+        }
+        
+        const debates = await Debate.find({ userId: req.user.id }).sort({ createdAt: -1 });
+        res.json(debates);
+    } catch (error) {
+        console.error("Error fetching history:", error);
+        res.status(500).json({ error: "Failed to fetch debate history" });
+    }
+};
+
+module.exports = { askAi, getHistory };

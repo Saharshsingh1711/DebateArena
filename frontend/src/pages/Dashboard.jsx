@@ -8,6 +8,8 @@ function Dashboard() {
     const [response, setResponse] = useState(null);
     const [loading, setLoading] = useState(false);
     const [user, setUser] = useState(null);
+    const [personality, setPersonality] = useState("Standard");
+    const [history, setHistory] = useState([]);
     const navigate = useNavigate();
 
     // Check user authentication on component mount
@@ -27,6 +29,16 @@ function Dashboard() {
         }
     }, [navigate]);
 
+    // Fetch debate history
+    useEffect(() => {
+        const token = localStorage.getItem("token");
+        if (token) {
+            axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/ai/history`, {
+                headers: { Authorization: `Bearer ${token}` }
+            }).then(res => setHistory(res.data)).catch(console.error);
+        }
+    }, [response]); // Refreshes automatically whenever a new response comes in
+
     // Handles the submission of the user's debate prompt
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -44,9 +56,10 @@ function Dashboard() {
             const token = localStorage.getItem("token");
             
             // POST request to backend containing the prompt
+            const currentPrompt = prompt;
             const res = await axios.post(
                 `${import.meta.env.VITE_BACKEND_URL}/api/ai/ask`,
-                { prompt },
+                { prompt: currentPrompt, personality },
                 {
                     headers: {
                         Authorization: `Bearer ${token}`
@@ -93,7 +106,44 @@ function Dashboard() {
             {/* Background design element - subtle green blur for visual flair */}
             <div className="absolute top-1/4 right-1/4 w-[500px] h-[500px] bg-emerald-100/50 rounded-full blur-[120px] pointer-events-none"></div>
 
-            <div className="max-w-4xl mx-auto relative z-10">
+            <div className="flex flex-col lg:flex-row gap-8 max-w-7xl mx-auto relative z-10 w-full">
+                
+                {/* Sidebar for History */}
+                <div className="w-full lg:w-1/3 xl:w-1/4 bg-white/80 backdrop-blur-xl border border-gray-200 rounded-3xl p-6 shadow-md h-auto lg:h-[calc(100vh-200px)] overflow-y-auto">
+                    <h2 className="text-xl font-bold mb-4 text-gray-800 flex items-center gap-2">
+                        <svg className="w-5 h-5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Past Debates
+                    </h2>
+                    {history.length === 0 ? (
+                        <p className="text-gray-500 text-sm italic">No history yet.</p>
+                    ) : (
+                        <ul className="space-y-3">
+                            {history.map((item) => (
+                                <li key={item._id} 
+                                    className="p-3 border border-gray-100 rounded-xl hover:bg-gray-50 cursor-pointer transition shadow-sm"
+                                    onClick={() => {
+                                        try {
+                                            setResponse(JSON.parse(item.response));
+                                        } catch(e) {
+                                            setResponse({ raw: item.response });
+                                        }
+                                        setPersonality(item.personality || "Standard");
+                                    }}
+                                >
+                                    <p className="text-sm font-semibold text-gray-800 truncate mb-1">{item.prompt}</p>
+                                    <span className="text-[10px] text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">
+                                        {item.personality || "Standard"}
+                                    </span>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </div>
+
+                {/* Main Content Area */}
+                <div className="flex-1 max-w-4xl">
                 {/* Header Section */}
                 <header className="mb-10 text-center">
                     <h1 className="text-4xl md:text-5xl font-display font-bold tracking-tight mb-4">
@@ -105,15 +155,30 @@ function Dashboard() {
                 {/* Input Form Card */}
                 {/* Notice that this div encapsulates ONLY the prompt UI, keeping the response completely separate */}
                 <div className="bg-white/80 backdrop-blur-xl border border-gray-200 rounded-3xl p-6 shadow-xl mb-8">
-                    <form onSubmit={handleSubmit} className="flex flex-col md:flex-row gap-4">
-                        <input
-                            type="text"
-                            value={prompt}
-                            onChange={(e) => setPrompt(e.target.value)}
-                            placeholder="State your argument..."
-                            className="flex-1 px-6 py-4 bg-white border border-gray-200 rounded-2xl text-gray-900 text-lg placeholder-gray-400 outline-none transition-all duration-300 focus:bg-white focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20"
-                            disabled={loading}
-                        />
+                    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+                        <div className="flex flex-col md:flex-row gap-4">
+                            {/* Personality Selector */}
+                            <select 
+                                value={personality} 
+                                onChange={(e) => setPersonality(e.target.value)}
+                                className="px-4 py-4 bg-gray-50 border border-gray-200 rounded-2xl text-gray-700 outline-none focus:bg-white focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 font-medium md:max-w-[170px]"
+                                disabled={loading}
+                            >
+                                <option value="Standard">Standard</option>
+                                <option value="Aggressive">Aggressive</option>
+                                <option value="Philosophical">Philosophical</option>
+                                <option value="Sarcastic">Sarcastic</option>
+                            </select>
+
+                            {/* Main Input */}
+                            <input
+                                type="text"
+                                value={prompt}
+                                onChange={(e) => setPrompt(e.target.value)}
+                                placeholder="State your argument..."
+                                className="flex-1 px-6 py-4 bg-white border border-gray-200 rounded-2xl text-gray-900 text-lg placeholder-gray-400 outline-none transition-all duration-300 focus:bg-white focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20"
+                                disabled={loading}
+                            />
                         <button
                             type="submit"
                             disabled={loading}
@@ -130,6 +195,7 @@ function Dashboard() {
                                 "Debate"
                             )}
                         </button>
+                        </div>
                     </form>
                 </div>
 
@@ -212,6 +278,8 @@ function Dashboard() {
                         </div>
                     )}
                 </div>
+                
+                </div> {/* End Main Content Area */}
             </div>
         </div>
     );
