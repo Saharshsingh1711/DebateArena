@@ -28,4 +28,13 @@ app.get("/", (req, res) => {
   res.json({ message: "AI Debate Arena Backend chal raha hai!" });
 });
 
+app.get("/api/debug-db", (req, res) => {
+  const mongoose = require("mongoose");
+  res.json({
+    hasUri: !!process.env.MONGODB_URI,
+    connectionState: mongoose.connection.readyState,
+    readyStateName: ["disconnected", "connected", "connecting", "disconnecting"][mongoose.connection.readyState]
+  });
+});
+
 module.exports = app;
